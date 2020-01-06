@@ -37,6 +37,7 @@ public class Car implements Serializable{
         this.year = year;
         this.price = price;
         this.quantity = quantity;
+        this.count = quantity;
     }
 
     public Long getId() {

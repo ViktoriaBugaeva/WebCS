@@ -26,7 +26,7 @@
             Цена:<br>
             <input type="text" name="price"><br>
             Колличество:<br>
-            <input type="text" name="count"><br>
+            <input type="text" name="quantity"><br>
             <br>
             <input type="submit" value="Добавить"><br>
           

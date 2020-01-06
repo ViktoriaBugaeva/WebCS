@@ -80,14 +80,14 @@ public class WebController extends HttpServlet {
                 String model = request.getParameter("model");
                 String year = request.getParameter("year");
                 String price = request.getParameter("price");
-                String count = request.getParameter("count");
+                String quantity = request.getParameter("quantity");
                 Car car;
                 car = new Car(
                             marka,
                             model,
                             Integer.parseInt(year),
                             Integer.parseInt(price),
-                            Integer.parseInt(count));
+                            Integer.parseInt(quantity));
                 carFacade.create(car);
                 request.setAttribute("info", "Автомобиль добавлен");
                 request.getRequestDispatcher("/index.jsp")
