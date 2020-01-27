@@ -8,6 +8,7 @@ package controllers;
 import entity.Buyer;
 import entity.Car;
 import entity.History;
+import entity.User;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
@@ -19,6 +20,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import session.BuyerFacade;
 import session.CarFacade;
 import session.HistoryFacade;
@@ -28,18 +30,11 @@ import session.HistoryFacade;
  * @author vi
  */
 @WebServlet(name = "WebController", urlPatterns = {
-    "/showLogin",
-    "/login",
+    
     "/newCar",
-    "/createCar",
-    "/newBuyer",
-    "/createBuyer",
-    "/listCars",
+    "/createCar", 
     "/listBuyers",
-    "/newOrderCar",
-    "/createOrderCar",
-    "/listBuyCars",
-    "/buyCar"
+
 })
 public class WebController extends HttpServlet {
 
@@ -54,51 +49,34 @@ public class WebController extends HttpServlet {
                 throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         request.setCharacterEncoding("UTF-8");
-        String path = request.getServletPath();
-        switch (path) {
-            case "/showLogin":
-                request.getRequestDispatcher("/showLogin.jsp")
-                            .forward(request, response);
-                break;
-            case "/login":
-                String login = request.getParameter("login");
-                String password = request.getParameter("password");
-                if ("Viktoria".equals(login) && "123456".equals(password)) {
-                    request.setAttribute("info", "Привет, " + login + "!");
-                } else {
-                    request.setAttribute("info", "Неправильный логин или пароль!");
-                }
-                request.getRequestDispatcher("/index.jsp")
-                            .forward(request, response);
-                break;
-            case "/newCar":
-                request.getRequestDispatcher("/newCar.jsp")
-                            .forward(request, response);
-                break;
-            case "/createCar":
-                String marka = request.getParameter("marka");
-                String model = request.getParameter("model");
-                String year = request.getParameter("year");
-                String price = request.getParameter("price");
-                String quantity = request.getParameter("quantity");
-                Car car;
-                car = new Car(
-                            marka,
-                            model,
-                            Integer.parseInt(year),
-                            Integer.parseInt(price),
-                            Integer.parseInt(quantity));
-                carFacade.create(car);
-                request.setAttribute("info", "Автомобиль добавлен");
-                request.getRequestDispatcher("/index.jsp")
-                            .forward(request, response);
-                break;
-            case "/listCars":
-                List<Car> listCars = carFacade.findAll();
-                request.setAttribute("listCars", listCars);
-                request.getRequestDispatcher("/listCars.jsp")
-                            .forward(request, response);
-                break;
+        
+        
+        //защита ресурсов
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            request.setAttribute("info", "У вас нет прав, войдите или зарегистрируйтесь");
+            request.getRequestDispatcher("/WEB-INF/showLogin.jsp")
+                        .forward(request, response);
+            return;
+        }
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            request.setAttribute("info", "У вас нет прав, войдите или зарегистрируйтесь");
+            request.getRequestDispatcher("/WEB-INF/showLogin.jsp")
+                        .forward(request, response);
+            return;
+        }
+        
+        if (!"admin".equals(user.getLogin())) {
+            request.setAttribute("info", "У вас нет прав, войдите как ");
+            request.getRequestDispatcher("/WEB-INF/showLogin.jsp")
+                        .forward(request, response);
+             return;
+        }
+        
+        
+                String path = request.getServletPath();
+                switch (path) {
             case "/newBuyer":
                 request.getRequestDispatcher("/newBuyer.jsp")
                             .forward(request, response);
@@ -126,71 +104,32 @@ public class WebController extends HttpServlet {
                             .forward(request, response);
                 break;
         
-            case "/newOrderCar":
-                listCars = carFacade.findAll();
-                listBuyers = buyerFacade.findAll();
-                request.setAttribute("listCars", listCars);
-                request.setAttribute("listBuyers", listBuyers);
-                request.getRequestDispatcher("/newOrderCar.jsp")
+             case "/newCar":
+                request.getRequestDispatcher("/newCar.jsp")
                             .forward(request, response);
                 break;
-            case "/createOrderCar":
-                String carId = request.getParameter("carId");
-                String buyerId = request.getParameter("buyerId");
-                car = carFacade.find(Long.parseLong(carId));
-                buyer = buyerFacade.find(Long.parseLong(buyerId));
-                
-                if (car.getCount() > 0 ) {
-                    if(buyer.getMoney() - car.getPrice()>=0){
-                        car.setCount(car.getCount() - 1);
-                        carFacade.edit(car);
-                        buyer.setMoney(buyer.getMoney() - car.getPrice());
-                        buyerFacade.edit(buyer);
-                        History history = new History();
-                        history.setCar(car);
-                        history.setBuyer(buyer);
-                        history.setTakeOn(new Date());
-                        historyFacade.create(history);
-                        request.setAttribute("info",
-                                    "Машина \""
-                                    + car.getMarka()
-                                    + " " + car.getModel()
-                                    + "\" продана покупателю "
-                                    + buyer.getName()
-                                    + " " + buyer.getLastname()
-                        );
-                    }else{
-                         request.setAttribute("info", "Недостаточно средств");
-                    }
-
-                } else {
-                    request.setAttribute("info", "Все машины проданы");
-                }
-
-                request.getRequestDispatcher("/index.jsp").forward(request, response);
-
-                break;
-            case "/listBuyCars":
-                List<History> listHistories = historyFacade.findBuyCar();
-                request.setAttribute("listHistories", listHistories);
-                request.getRequestDispatcher("/listBuyCars.jsp")
-                            .forward(request, response);
-                break;
-
-            case "/buyCar":
-                String historyId = request.getParameter("historyId");
-                History history = historyFacade.find(Long.parseLong(historyId));
-                history.setTakeOn(new Date());
-                historyFacade.edit(history);
-                request.setAttribute("info",
-                            "Автомобиль \""
-                            + history.getCar().getMarka()
-                            + " " + history.getCar().getModel()
-                            + "\" продан покупателю: "
-                            + history.getBuyer().getName()
-                            + " " + history.getBuyer().getLastname()
-                );
+            case "/createCar":
+                String marka = request.getParameter("marka");
+                String model = request.getParameter("model");
+                String year = request.getParameter("year");
+                String price = request.getParameter("price");
+                String quantity = request.getParameter("quantity");
+                Car car;
+                car = new Car(
+                            marka,
+                            model,
+                            Integer.parseInt(year),
+                            Integer.parseInt(price),
+                            Integer.parseInt(quantity));
+                carFacade.create(car);
+                request.setAttribute("info", "Автомобиль добавлен");
                 request.getRequestDispatcher("/index.jsp")
+                            .forward(request, response);
+                break;
+            case "/listCars":
+                List<Car> listCars = carFacade.findAll();
+                request.setAttribute("listCars", listCars);
+                request.getRequestDispatcher("/listCars.jsp")
                             .forward(request, response);
                 break;
                
