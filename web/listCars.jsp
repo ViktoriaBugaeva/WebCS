@@ -17,7 +17,7 @@
         <a href="index.jsp">Главна страница</a><br>
         <ol>
             <c:forEach var="car" items="${listCars}">
-                <li> ${car.marka}. ${car.model}. ${car.count}. ${car.year}. ${car.price}</li>
+                <li> ${car.marka}. ${car.model}. ${car.year}. ${car.price}. ${car.count}</li>
             </c:forEach>
         </ol>
     </body>
